@@ -1,258 +1,142 @@
 const Portfolio = require("../models/Portfolio");
+const cloudinary = require("cloudinary").v2;
 
-// Helper — generate a unique slug from user's name
-// e.g. "John Doe" → "john-doe-1a2b3c"
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
 const generateSlug = (name) => {
-  const base = name
-    .toLowerCase()
-    .trim()
+  const base = name.toLowerCase().trim()
     .replace(/[^a-z0-9\s]/g, "")
     .replace(/\s+/g, "-");
-  const suffix = Math.random().toString(36).substring(2, 8); // random 6 chars
+  const suffix = Math.random().toString(36).substring(2, 8);
   return `${base}-${suffix}`;
 };
 
-// ─────────────────────────────────────────────
-// @route   POST /api/portfolios
-// @desc    Create a new portfolio
-// @access  Private
-// ─────────────────────────────────────────────
+// Create portfolio
 const createPortfolio = async (req, res, next) => {
   try {
     const { title } = req.body;
+    if (!title) return res.status(400).json({ success: false, message: "Title is required" });
 
-    if (!title) {
-      return res.status(400).json({
-        success: false,
-        message: "Portfolio title is required",
-      });
-    }
-
-    // Generate a unique shareable slug
     const slug = generateSlug(title);
+    const portfolio = await Portfolio.create({ user: req.user.id, title, slug });
 
-    const portfolio = await Portfolio.create({
-      user: req.user.id, // from authMiddleware
-      title,
-      slug,
-    });
-
-    res.status(201).json({
-      success: true,
-      message: "Portfolio created successfully",
-      portfolio,
-    });
-  } catch (error) {
-    next(error);
-  }
+    res.status(201).json({ success: true, portfolio });
+  } catch (error) { next(error); }
 };
 
-// ─────────────────────────────────────────────
-// @route   GET /api/portfolios
-// @desc    Get all portfolios of logged-in user
-// @access  Private
-// ─────────────────────────────────────────────
+// Get all portfolios
 const getMyPortfolios = async (req, res, next) => {
   try {
     const portfolios = await Portfolio.find({ user: req.user.id })
-      .sort({ updatedAt: -1 }) // newest first
-      .select("title template theme isPublished slug createdAt updatedAt");
+      .sort({ updatedAt: -1 })
+      .select("title template theme isPublished slug createdAt updatedAt hero");
 
-    res.status(200).json({
-      success: true,
-      count: portfolios.length,
-      portfolios,
-    });
-  } catch (error) {
-    next(error);
-  }
+    res.status(200).json({ success: true, count: portfolios.length, portfolios });
+  } catch (error) { next(error); }
 };
 
-// ─────────────────────────────────────────────
-// @route   GET /api/portfolios/:id
-// @desc    Get a single portfolio by ID
-// @access  Private
-// ─────────────────────────────────────────────
+// Get single portfolio
 const getPortfolioById = async (req, res, next) => {
   try {
     const portfolio = await Portfolio.findById(req.params.id);
+    if (!portfolio) return res.status(404).json({ success: false, message: "Not found" });
+    if (portfolio.user.toString() !== req.user.id)
+      return res.status(403).json({ success: false, message: "Not authorized" });
 
-    if (!portfolio) {
-      return res.status(404).json({
-        success: false,
-        message: "Portfolio not found",
-      });
-    }
-
-    // Make sure the portfolio belongs to the logged-in user
-    if (portfolio.user.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to access this portfolio",
-      });
-    }
-
-    res.status(200).json({
-      success: true,
-      portfolio,
-    });
-  } catch (error) {
-    next(error);
-  }
+    res.status(200).json({ success: true, portfolio });
+  } catch (error) { next(error); }
 };
 
-// ─────────────────────────────────────────────
-// @route   PUT /api/portfolios/:id
-// @desc    Update a portfolio (all sections)
-// @access  Private
-// ─────────────────────────────────────────────
+// Update portfolio
 const updatePortfolio = async (req, res, next) => {
   try {
     let portfolio = await Portfolio.findById(req.params.id);
+    if (!portfolio) return res.status(404).json({ success: false, message: "Not found" });
+    if (portfolio.user.toString() !== req.user.id)
+      return res.status(403).json({ success: false, message: "Not authorized" });
 
-    if (!portfolio) {
-      return res.status(404).json({
-        success: false,
-        message: "Portfolio not found",
-      });
-    }
-
-    // Make sure the portfolio belongs to the logged-in user
-    if (portfolio.user.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to update this portfolio",
-      });
-    }
-
-    // Update with whatever fields are sent in request body
-    // { new: true } returns the updated document
-    // { runValidators: true } runs schema validations on update
     portfolio = await Portfolio.findByIdAndUpdate(
       req.params.id,
-      { ...req.body, updatedAt: Date.now() },
+      { ...req.body },
       { new: true, runValidators: true }
     );
 
-    res.status(200).json({
-      success: true,
-      message: "Portfolio updated successfully",
-      portfolio,
-    });
-  } catch (error) {
-    next(error);
-  }
+    res.status(200).json({ success: true, message: "Saved!", portfolio });
+  } catch (error) { next(error); }
 };
 
-// ─────────────────────────────────────────────
-// @route   DELETE /api/portfolios/:id
-// @desc    Delete a portfolio
-// @access  Private
-// ─────────────────────────────────────────────
+// Delete portfolio
 const deletePortfolio = async (req, res, next) => {
   try {
     const portfolio = await Portfolio.findById(req.params.id);
-
-    if (!portfolio) {
-      return res.status(404).json({
-        success: false,
-        message: "Portfolio not found",
-      });
-    }
-
-    // Make sure the portfolio belongs to the logged-in user
-    if (portfolio.user.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to delete this portfolio",
-      });
-    }
+    if (!portfolio) return res.status(404).json({ success: false, message: "Not found" });
+    if (portfolio.user.toString() !== req.user.id)
+      return res.status(403).json({ success: false, message: "Not authorized" });
 
     await portfolio.deleteOne();
-
-    res.status(200).json({
-      success: true,
-      message: "Portfolio deleted successfully",
-    });
-  } catch (error) {
-    next(error);
-  }
+    res.status(200).json({ success: true, message: "Deleted" });
+  } catch (error) { next(error); }
 };
 
-// ─────────────────────────────────────────────
-// @route   PUT /api/portfolios/:id/publish
-// @desc    Toggle publish/unpublish a portfolio
-// @access  Private
-// ─────────────────────────────────────────────
+// Toggle publish
 const togglePublish = async (req, res, next) => {
   try {
     const portfolio = await Portfolio.findById(req.params.id);
+    if (!portfolio) return res.status(404).json({ success: false, message: "Not found" });
+    if (portfolio.user.toString() !== req.user.id)
+      return res.status(403).json({ success: false, message: "Not authorized" });
 
-    if (!portfolio) {
-      return res.status(404).json({
-        success: false,
-        message: "Portfolio not found",
-      });
-    }
-
-    if (portfolio.user.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized",
-      });
-    }
-
-    // Flip the published status
     portfolio.isPublished = !portfolio.isPublished;
     await portfolio.save();
 
     res.status(200).json({
       success: true,
-      message: portfolio.isPublished
-        ? "Portfolio published! 🎉"
-        : "Portfolio unpublished",
+      message: portfolio.isPublished ? "Portfolio published! 🎉" : "Portfolio unpublished",
       isPublished: portfolio.isPublished,
       slug: portfolio.slug,
     });
-  } catch (error) {
-    next(error);
-  }
+  } catch (error) { next(error); }
 };
 
-// ─────────────────────────────────────────────
-// @route   GET /api/portfolios/public/:slug
-// @desc    Get a published portfolio by slug (shareable link)
-// @access  Public
-// ─────────────────────────────────────────────
+// Public portfolio by slug
 const getPublicPortfolio = async (req, res, next) => {
   try {
     const portfolio = await Portfolio.findOne({
       slug: req.params.slug,
       isPublished: true,
     });
+    if (!portfolio) return res.status(404).json({ success: false, message: "Not found" });
 
-    if (!portfolio) {
-      return res.status(404).json({
-        success: false,
-        message: "Portfolio not found or not published",
-      });
-    }
+    res.status(200).json({ success: true, portfolio });
+  } catch (error) { next(error); }
+};
+
+// Upload image to Cloudinary
+const uploadImage = async (req, res, next) => {
+  try {
+    const { image, folder } = req.body;
+    if (!image) return res.status(400).json({ success: false, message: "No image provided" });
+
+    const result = await cloudinary.uploader.upload(image, {
+      folder: `portfolio-builder/${folder || "general"}`,
+      transformation: [{ width: 800, quality: "auto", fetch_format: "auto" }],
+    });
 
     res.status(200).json({
       success: true,
-      portfolio,
+      url: result.secure_url,
+      public_id: result.public_id,
     });
-  } catch (error) {
-    next(error);
-  }
+  } catch (error) { next(error); }
 };
 
 module.exports = {
-  createPortfolio,
-  getMyPortfolios,
-  getPortfolioById,
-  updatePortfolio,
-  deletePortfolio,
-  togglePublish,
-  getPublicPortfolio,
+  createPortfolio, getMyPortfolios, getPortfolioById,
+  updatePortfolio, deletePortfolio, togglePublish,
+  getPublicPortfolio, uploadImage,
 };
