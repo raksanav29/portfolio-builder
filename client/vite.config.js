@@ -5,22 +5,24 @@
 // export default defineConfig({
 //   plugins: [react()],
 // })
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
   build: {
-    chunkSizeWarningLimit: 1600, // increase limit
+    chunkSizeWarningLimit: 1600,
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Split large libraries into separate chunks
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          motion: ['framer-motion'],
-          axios: ['axios'],
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            if (id.includes("react")) return "vendor";
+            if (id.includes("framer-motion")) return "motion";
+            if (id.includes("axios")) return "axios";
+            return "vendor";
+          }
         },
       },
     },
   },
-})
+});
