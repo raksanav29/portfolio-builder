@@ -63,11 +63,18 @@ export default function Editor() {
     finally { setSaving(false); }
   };
 
+  // const handleExport = () => {
+  //   if (!portfolioData) return;
+  //   exportToHTML(portfolioData);
+  //   toast.success("HTML downloaded! 🎉");
+  // };
+
   const handleExport = () => {
-    if (!portfolioData) return;
-    exportToHTML(portfolioData);
-    toast.success("HTML downloaded! 🎉");
-  };
+  if (!portfolioData) return;
+  // Pass complete portfolioData including template selection
+  exportToHTML(portfolioData);
+  toast.success(`${portfolioData.template || "minimal"} template exported! 🎉`);
+};
 
   const renderForm = () => {
     switch (activeSection) {
