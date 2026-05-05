@@ -101,7 +101,7 @@ export default function Dashboard() {
             <p className="text-gray-500 mt-1">
               {portfolios.length === 0
                 ? "Create your first portfolio to get started"
-                : `${portfolios.length} portfolio${portfolios.length > 1 ? "s" : ""} · Click to edit`}
+                : `${portfolios.length} portfolio${portfolios.length > 1 ? "s" : ""} ·`}
             </p>
           </div>
           <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>

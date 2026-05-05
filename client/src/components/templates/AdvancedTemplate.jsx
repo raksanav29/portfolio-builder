@@ -303,7 +303,7 @@ export default function AdvancedTemplate({ data }) {
             <div style={{ display: "inline-block", padding: "4px 14px", borderRadius: "9999px", background: `${primary}15`, border: `1px solid ${primary}30`, marginBottom: "16px" }}>
               <span style={{ fontSize: "12px", fontWeight: "700", color: primary, letterSpacing: "0.1em", textTransform: "uppercase" }}>Achievements</span>
             </div>
-            <h2 style={{ fontSize: "32px", fontWeight: "800", color: text, marginBottom: "28px" }}>Certifications & Awards</h2>
+            <h2 style={{ fontSize: "32px", fontWeight: "800", color: text, marginBottom: "28px" }}>Certifications</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
               {achievements.map((a, i) => (
                 <div key={i} style={{ padding: "22px", borderRadius: "16px", backgroundColor: cardBg, border: `1px solid ${cardBorder}`, position: "relative", overflow: "hidden" }}>
