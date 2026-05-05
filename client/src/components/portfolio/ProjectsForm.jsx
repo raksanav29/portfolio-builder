@@ -1,31 +1,65 @@
+import { useState } from "react";
 import { usePortfolio } from "../../context/PortfolioContext";
+import portfolioService from "../../services/portfolioService";
+import toast from "react-hot-toast";
 
-const emptyProject = { title: "", description: "", techStack: [], liveUrl: "", githubUrl: "" };
+const emptyProject = {
+  title: "", description: "", techStack: [], image: "",
+  liveUrl: "", githubUrl: "", featured: false,
+  caseStudy: { problem: "", solution: "", result: "" },
+};
 
 export default function ProjectsForm() {
   const { portfolioData, setPortfolioData } = usePortfolio();
   const projects = portfolioData?.projects || [];
+  const [uploadingIndex, setUploadingIndex] = useState(null);
+  const [expandedIndex, setExpandedIndex] = useState(null);
 
   const updateProjects = (updated) => {
     setPortfolioData((prev) => ({ ...prev, projects: updated }));
   };
 
-  const addProject = () => updateProjects([...projects, { ...emptyProject }]);
+  const addProject = () => {
+    updateProjects([...projects, { ...emptyProject, caseStudy: { problem: "", solution: "", result: "" } }]);
+    setExpandedIndex(projects.length);
+  };
 
   const removeProject = (index) => updateProjects(projects.filter((_, i) => i !== index));
 
   const handleChange = (index, field, value) => {
-    const updated = projects.map((p, i) =>
-      i === index ? { ...p, [field]: value } : p
-    );
-    updateProjects(updated);
+    updateProjects(projects.map((p, i) => i === index ? { ...p, [field]: value } : p));
+  };
+
+  const handleCaseStudy = (index, field, value) => {
+    updateProjects(projects.map((p, i) =>
+      i === index ? { ...p, caseStudy: { ...p.caseStudy, [field]: value } } : p
+    ));
   };
 
   const handleTechStack = (index, value) => {
-    // Convert comma-separated string to array
     const tech = value.split(",").map((t) => t.trim()).filter(Boolean);
     handleChange(index, "techStack", tech);
   };
+
+  const handleImageUpload = async (index, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB"); return; }
+
+    setUploadingIndex(index);
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const data = await portfolioService.uploadImage(reader.result, "projects");
+        handleChange(index, "image", data.url);
+        toast.success("Image uploaded!");
+      };
+      reader.readAsDataURL(file);
+    } catch { toast.error("Upload failed"); }
+    finally { setUploadingIndex(null); }
+  };
+
+  const inputClass = "w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white";
 
   return (
     <div className="space-y-4">
@@ -43,54 +77,118 @@ export default function ProjectsForm() {
       {projects.length === 0 && (
         <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
           <div className="text-3xl mb-2">💼</div>
-          <p className="text-sm text-gray-400">No projects yet. Add your first one!</p>
+          <p className="text-sm text-gray-400">No projects yet</p>
         </div>
       )}
 
       {projects.map((project, index) => (
-        <div key={index} className="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-semibold text-gray-700">Project {index + 1}</span>
-            <button onClick={() => removeProject(index)}
-              className="text-red-400 hover:text-red-600 text-sm transition">Remove</button>
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Project Title</label>
-            <input type="text" value={project.title} onChange={(e) => handleChange(index, "title", e.target.value)}
-              placeholder="My Awesome Project"
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white" />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
-            <textarea value={project.description} onChange={(e) => handleChange(index, "description", e.target.value)}
-              placeholder="What does this project do?" rows={3}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white resize-none" />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Tech Stack (comma separated)</label>
-            <input type="text" value={project.techStack?.join(", ") || ""}
-              onChange={(e) => handleTechStack(index, e.target.value)}
-              placeholder="React, Node.js, MongoDB"
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white" />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Live URL</label>
-              <input type="url" value={project.liveUrl} onChange={(e) => handleChange(index, "liveUrl", e.target.value)}
-                placeholder="https://myproject.com"
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white" />
+        <div key={index} className="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
+          {/* Project Header */}
+          <div className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-gray-100 transition"
+            onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-700">
+                {project.title || `Project ${index + 1}`}
+              </span>
+              {project.featured && (
+                <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">⭐ Featured</span>
+              )}
             </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">GitHub URL</label>
-              <input type="url" value={project.githubUrl} onChange={(e) => handleChange(index, "githubUrl", e.target.value)}
-                placeholder="https://github.com/..."
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white" />
+            <div className="flex items-center gap-2">
+              <button onClick={(e) => { e.stopPropagation(); removeProject(index); }}
+                className="text-red-400 hover:text-red-600 text-sm transition">Remove</button>
+              <span className="text-gray-400 text-sm">{expandedIndex === index ? "▲" : "▼"}</span>
             </div>
           </div>
+
+          {/* Project Form */}
+          {expandedIndex === index && (
+            <div className="px-4 pb-4 space-y-3 border-t border-gray-200 pt-3">
+              {/* Image Upload */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Project Image</label>
+                {project.image && (
+                  <img src={project.image} alt="Project" className="w-full h-32 object-cover rounded-lg mb-2" />
+                )}
+                <label className="cursor-pointer inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-600 text-xs font-medium rounded-lg border border-indigo-200 hover:bg-indigo-100 transition">
+                  {uploadingIndex === index ? "Uploading..." : "Upload Image"}
+                  <input type="file" accept="image/*" className="hidden"
+                    onChange={(e) => handleImageUpload(index, e)}
+                    disabled={uploadingIndex === index} />
+                </label>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Title</label>
+                <input type="text" value={project.title}
+                  onChange={(e) => handleChange(index, "title", e.target.value)}
+                  placeholder="My Awesome Project" className={inputClass} />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                <textarea value={project.description}
+                  onChange={(e) => handleChange(index, "description", e.target.value)}
+                  placeholder="What does this project do?" rows={3}
+                  className={`${inputClass} resize-none`} />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Tech Stack (comma separated)</label>
+                <input type="text" value={project.techStack?.join(", ") || ""}
+                  onChange={(e) => handleTechStack(index, e.target.value)}
+                  placeholder="React, Node.js, MongoDB" className={inputClass} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Live URL</label>
+                  <input type="url" value={project.liveUrl}
+                    onChange={(e) => handleChange(index, "liveUrl", e.target.value)}
+                    placeholder="https://..." className={inputClass} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">GitHub URL</label>
+                  <input type="url" value={project.githubUrl}
+                    onChange={(e) => handleChange(index, "githubUrl", e.target.value)}
+                    placeholder="https://github.com/..." className={inputClass} />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id={`featured-${index}`} checked={project.featured}
+                  onChange={(e) => handleChange(index, "featured", e.target.checked)}
+                  className="accent-indigo-600" />
+                <label htmlFor={`featured-${index}`} className="text-sm text-gray-600">Mark as featured project</label>
+              </div>
+
+              {/* Case Study */}
+              <div className="bg-white rounded-lg border border-gray-200 p-3 space-y-3">
+                <h4 className="text-sm font-semibold text-gray-700">📋 Case Study</h4>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Problem</label>
+                  <textarea value={project.caseStudy?.problem || ""}
+                    onChange={(e) => handleCaseStudy(index, "problem", e.target.value)}
+                    placeholder="What problem does this project solve?" rows={2}
+                    className={`${inputClass} resize-none`} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Solution</label>
+                  <textarea value={project.caseStudy?.solution || ""}
+                    onChange={(e) => handleCaseStudy(index, "solution", e.target.value)}
+                    placeholder="How did you solve it?" rows={2}
+                    className={`${inputClass} resize-none`} />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Result</label>
+                  <textarea value={project.caseStudy?.result || ""}
+                    onChange={(e) => handleCaseStudy(index, "result", e.target.value)}
+                    placeholder="What was the outcome?" rows={2}
+                    className={`${inputClass} resize-none`} />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ))}
     </div>
