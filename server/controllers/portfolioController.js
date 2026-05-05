@@ -138,5 +138,5 @@ const uploadImage = async (req, res, next) => {
 module.exports = {
   createPortfolio, getMyPortfolios, getPortfolioById,
   updatePortfolio, deletePortfolio, togglePublish,
-  getPublicPortfolio, uploadImage,
+  getPublicPortfolio,
 };

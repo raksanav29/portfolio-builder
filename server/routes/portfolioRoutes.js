@@ -31,9 +31,13 @@
 const express = require("express");
 const router = express.Router();
 const {
-  createPortfolio, getMyPortfolios, getPortfolioById,
-  updatePortfolio, deletePortfolio, togglePublish,
-  getPublicPortfolio, uploadImage,
+  createPortfolio,
+  getMyPortfolios,
+  getPortfolioById,
+  updatePortfolio,
+  deletePortfolio,
+  togglePublish,
+  getPublicPortfolio,
 } = require("../controllers/portfolioController");
 const { protect } = require("../middleware/authMiddleware");
 
@@ -48,6 +52,5 @@ router.get("/:id", getPortfolioById);
 router.put("/:id", updatePortfolio);
 router.delete("/:id", deletePortfolio);
 router.put("/:id/publish", togglePublish);
-router.post("/upload/image", uploadImage);
 
 module.exports = router;
