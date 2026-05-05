@@ -2,6 +2,8 @@ import { useState } from "react";
 import { usePortfolio } from "../../context/PortfolioContext";
 import portfolioService from "../../services/portfolioService";
 import toast from "react-hot-toast";
+import { uploadResumeToCloudinary } from "../../services/uploadService";
+
 
 export default function ContactForm() {
   const { portfolioData, updateSection, setPortfolioData } = usePortfolio();
@@ -12,22 +14,19 @@ export default function ContactForm() {
     updateSection("contact", { [e.target.name]: e.target.value });
 
   const handleResumeUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const file = e.target.files[0];
+  if (!file) return;
 
-    // Validate file type
-    const allowed = ["application/pdf", "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
-    if (!allowed.includes(file.type)) {
-      toast.error("Only PDF or Word files allowed");
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("File must be under 10MB");
-      return;
-    }
-
+  const allowed = ["application/pdf", "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+  if (!allowed.includes(file.type)) {
+    toast.error("Only PDF or Word files allowed");
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    toast.error("File must be under 10MB");
+    return;
+  }
     setUploading(true);
     try {
       const reader = new FileReader();

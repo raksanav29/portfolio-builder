@@ -2,6 +2,7 @@ import { useState } from "react";
 import { usePortfolio } from "../../context/PortfolioContext";
 import portfolioService from "../../services/portfolioService";
 import toast from "react-hot-toast";
+import { uploadImageToCloudinary } from "../../services/uploadService";
 
 const emptyProject = {
   title: "", description: "", techStack: [], image: "",
@@ -40,24 +41,22 @@ export default function ProjectsForm() {
     const tech = value.split(",").map((t) => t.trim()).filter(Boolean);
     handleChange(index, "techStack", tech);
   };
+const handleImageUpload = async (index, e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB"); return; }
 
-  const handleImageUpload = async (index, e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error("Image must be under 5MB"); return; }
-
-    setUploadingIndex(index);
-    try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const data = await portfolioService.uploadImage(reader.result, "projects");
-        handleChange(index, "image", data.url);
-        toast.success("Image uploaded!");
-      };
-      reader.readAsDataURL(file);
-    } catch { toast.error("Upload failed"); }
-    finally { setUploadingIndex(null); }
-  };
+  setUploadingIndex(index);
+  try {
+    const data = await uploadImageToCloudinary(file, "projects");
+    handleChange(index, "image", data.url);
+    toast.success("Image uploaded! ✓");
+  } catch (error) {
+    toast.error("Upload failed: " + error.message);
+  } finally {
+    setUploadingIndex(null); 
+  }
+};
 
   const inputClass = "w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white";
 
