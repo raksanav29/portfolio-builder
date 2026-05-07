@@ -25,11 +25,10 @@ export default function Login() {
     } finally { setLoading(false); }
   };
 
-  const inputClass = "w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition bg-gray-50 focus:bg-white";
+  const inputClass = "w-full px-4 py-3 rounded-xl border border-gray-200 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50 focus:bg-white transition";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center px-4">
-      {/* Background decoration */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-indigo-100 rounded-full opacity-50 blur-3xl" />
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-purple-100 rounded-full opacity-50 blur-3xl" />
@@ -38,10 +37,9 @@ export default function Login() {
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
+        transition={{ duration: 0.5 }}
         className="w-full max-w-md relative z-10"
       >
-        {/* Logo */}
         <div className="text-center mb-8">
           <motion.div
             initial={{ scale: 0 }}
@@ -55,7 +53,6 @@ export default function Login() {
           <p className="text-gray-500 mt-1 text-sm">Sign in to your account</p>
         </div>
 
-        {/* Card */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl shadow-gray-200/50 border border-white p-8">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -64,7 +61,13 @@ export default function Login() {
                 placeholder="john@example.com" className={inputClass} autoComplete="email" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-sm font-semibold text-gray-700">Password</label>
+                <Link to="/forgot-password"
+                  className="text-xs text-indigo-600 font-medium hover:text-indigo-700 hover:underline transition">
+                  Forgot password?
+                </Link>
+              </div>
               <input type="password" name="password" value={form.password} onChange={handleChange}
                 placeholder="••••••••" className={inputClass} autoComplete="current-password" />
             </div>
@@ -73,13 +76,7 @@ export default function Login() {
             </Button>
           </form>
 
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
-            </div>
-          </div>
-
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center text-sm text-gray-500 mt-6">
             Don't have an account?{" "}
             <Link to="/signup" className="text-indigo-600 font-semibold hover:text-indigo-700 transition">
               Sign up free

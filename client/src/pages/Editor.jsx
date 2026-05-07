@@ -12,22 +12,22 @@ import ProjectsForm from "../components/portfolio/ProjectsForm";
 import AchievementsForm from "../components/portfolio/AchievementsForm";
 import EducationForm from "../components/portfolio/EducationForm";
 import StatisticsForm from "../components/portfolio/StatisticsForm";
-import TestimonialsForm from "../components/portfolio/TestimonialsForm";
 import ContactForm from "../components/portfolio/ContactForm";
 import ThemeForm from "../components/portfolio/ThemeForm";
 import LivePreview from "../components/preview/LivePreview";
 import { exportToHTML } from "../utils/exportHelper";
 import toast from "react-hot-toast";
+import ExperienceForm from "../components/portfolio/ExperienceForm";
 
 const SECTIONS = [
   { id: "hero",         label: "👤 Hero" },
   { id: "about",        label: "🙋 About" },
   { id: "skills",       label: "⚡ Skills" },
   { id: "projects",     label: "💼 Projects" },
+   { id: "experience",   label: "🏢 Experience" },
   { id: "achievements", label: "🏆 Achievements" },
   { id: "education",    label: "🎓 Education" },
   { id: "statistics",   label: "📊 Stats" },
-  { id: "testimonials", label: "💬 Reviews" },
   { id: "contact",      label: "📞 Contact" },
   { id: "theme",        label: "🎨 Theme" },
 ];
@@ -82,10 +82,10 @@ export default function Editor() {
       case "about":        return <AboutForm />;
       case "skills":       return <SkillsForm />;
       case "projects":     return <ProjectsForm />;
+       case "experience":   return <ExperienceForm />;
       case "achievements": return <AchievementsForm />;
       case "education":    return <EducationForm />;
       case "statistics":   return <StatisticsForm />;
-      case "testimonials": return <TestimonialsForm />;
       case "contact":      return <ContactForm />;
       case "theme":        return <ThemeForm />;
       default:             return <HeroForm />;
